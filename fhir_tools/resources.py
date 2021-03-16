@@ -138,6 +138,8 @@ class FHIRObject(dict):
         dict.__init__(self, **initial)
 
     def __getattr__(self, name):
+        if name == 'resourceType':
+            return self._fhir_resource_type
         if name in self._fhir_polymorphic:
             if name in self:
                 # DB format
