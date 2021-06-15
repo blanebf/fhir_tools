@@ -168,6 +168,10 @@ class FHIRObject(dict):
     def __delattr__(self, name):
         del self[name]
 
+    @property
+    def fhir_fields(self):
+        return self._fhir_fields
+
     @classmethod
     def from_json(cls, json):
         """Creates FHIR object (Resource, Complex Type or BackboneElement)
