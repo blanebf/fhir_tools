@@ -156,8 +156,21 @@ class FHIRObject(dict):
     def __setattr__(self, name, value):
         if name not in self._fhir_fields:
             raise AttributeError(name)
-
+        if isinstance(value, list):
+            _value = []
+            for element in value:
+                if (
+                    element is not None
+                    and element != ''
+                    and not (
+                        isinstance(element, six.string_types)
+                        and not element.isspace()
+                    )
+                ):
+                    # not None, not empty string, not whitespaces
+                    _value.append(value)
         if value is None or (isinstance(value, list) and not value):
+            # None or empty list
             try:
                 self.__delattr__(name)
             except (AttributeError, KeyError):
