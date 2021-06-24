@@ -83,9 +83,9 @@ class Resources(object):
                 polymorphic[field] = poly_fields
 
         backbone_types = {}
-        for name, elements in backbones.items():
+        for name, _elements in backbones.items():
             name = to_camel_case(name)
-            backbone_types[name] = self._create_backbone(name, elements)
+            backbone_types[name] = self._create_backbone(name, _elements)
         return fields, polymorphic, backbone_types
 
     @staticmethod
@@ -147,8 +147,7 @@ class FHIRObject(dict):
             for _name in self._fhir_polymorphic[name]:
                 if _name in self:
                     return self[_name]
-            else:
-                raise AttributeError(name)
+            raise AttributeError(name)
         if name in self._fhir_fields and name in self:
             return self[name]
         raise AttributeError(name)
@@ -159,16 +158,17 @@ class FHIRObject(dict):
         if isinstance(value, list):
             _value = []
             for element in value:
-                if (
+                if (  # pylint: disable=bad-continuation
                     element is not None
                     and element != ''
                     and not (
                         isinstance(element, six.string_types)
-                        and not element.isspace()
+                        and element.isspace()
                     )
                 ):
                     # not None, not empty string, not whitespaces
-                    _value.append(value)
+                    _value.append(element)
+            value = _value
         if value is None or (isinstance(value, list) and not value):
             # None or empty list
             try:
@@ -274,7 +274,8 @@ class FHIRObject(dict):
                     converted[field] = db_ref
             elif element.type.is_backbone or element.type.is_complex:
                 if element.is_array:
-                    [v.to_db_format() for v in value]
+                    for v in value:
+                        v.to_db_format()
                 else:
                     value.to_db_format()
         for poly_field, names in six.iteritems(self._fhir_polymorphic):
