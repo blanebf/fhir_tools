@@ -21,9 +21,28 @@ class TestResources(unittest.TestCase):
         self.assertTrue(issubclass(self.resources.HumanName, resources.Type))
 
     def test_attributes(self):
+        def _set_incorrect_field(resource):
+            resource._incorrect_field_123 = '123'
+
+        def _set_none(resource):
+            resource.id = None
+
+        def _set_blank(resource):
+            resource.id = ''
+
+        def _set_whitespace(resource):
+            resource.id = '    '
+
         patient = self.resources.Patient(id='example')
         self.assertEqual(patient.id, 'example')
         self.assertEqual(patient['resourceType'], 'Patient')
+        patient.id = None
+        self.assertFalse('id' in patient)
+        patient.id = ''
+        self.assertFalse('id' in patient)
+        patient.id = '   '
+        self.assertFalse('id' in patient)
+        self.assertRaises(AttributeError, _set_incorrect_field, patient)
 
     def test_from_json(self):
         patient = self.resources.Patient.from_json({

@@ -155,20 +155,11 @@ class FHIRObject(dict):
     def __setattr__(self, name, value):
         if name not in self._fhir_fields:
             raise AttributeError(name)
+        if isinstance(value, six.string_types):
+            if value == '' or value.isspace():
+                raise ValueError(name)
         if isinstance(value, list):
-            _value = []
-            for element in value:
-                if (  # pylint: disable=bad-continuation
-                    element is not None
-                    and element != ''
-                    and not (
-                        isinstance(element, six.string_types)
-                        and element.isspace()
-                    )
-                ):
-                    # not None, not empty string, not whitespaces
-                    _value.append(element)
-            value = _value
+            value = self._strip_blanks(value)
         if value is None or (isinstance(value, list) and not value):
             # None or empty list
             try:
@@ -180,6 +171,27 @@ class FHIRObject(dict):
 
     def __delattr__(self, name):
         del self[name]
+
+    @staticmethod
+    def _is_blank(value):
+        """Is None, empty string or whitespace.
+
+        """
+        return (
+            value is not None
+            and value != ''
+            and not (
+                isinstance(value, six.string_types)
+                and value.isspace()
+            )
+        )
+
+    @staticmethod
+    def _strip_blanks(_list):
+        """Del None, empty strings, whitespaces only.
+
+        """
+        return list(filter(lambda x: FHIRObject._is_blank(x), _list))
 
     @property
     def fhir_fields(self):
@@ -194,7 +206,7 @@ class FHIRObject(dict):
         """
         kwargs = {}
         for field, value in six.iteritems(json):
-            if field not in cls._fhir_fields:
+            if field not in cls._fhir_fields or value is None:
                 continue
             element = cls._fhir_fields[field]
             if not element.type.is_complex and not element.type.is_backbone:
@@ -208,6 +220,10 @@ class FHIRObject(dict):
                 else:
                     _class = cls._fhir_resources.get(element.type.code)
                 if element.is_array:
+                    value = cls._strip_blanks(value)
+                    if not value:
+                        # empty list
+                        continue
                     kwargs[field] = [_class.from_json(v) for v in value]
                 else:
                     kwargs[field] = _class.from_json(value)
